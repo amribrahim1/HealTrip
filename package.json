@@ -1,0 +1,48 @@
+{
+  "name": "healtrip-patient-decision-assistant",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "prisma generate && next dev",
+    "build": "prisma generate && next build",
+    "start": "next start",
+    "lint": "eslint src/app src/components src/lib src/server src/types prisma/seed.ts tests next.config.ts prisma.config.ts vitest.config.ts eslint.config.mjs",
+    "typecheck": "prisma generate && tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "db:generate": "prisma generate",
+    "db:validate": "prisma validate",
+    "db:migrate": "prisma migrate dev",
+    "db:deploy": "prisma migrate deploy",
+    "db:seed": "prisma generate && prisma db seed"
+  },
+  "dependencies": {
+    "@ai-sdk/google": "^2.0.0",
+    "@prisma/adapter-pg": "^7.10.0",
+    "@prisma/client": "^7.10.0",
+    "@tanstack/react-query": "^5.83.0",
+    "@trpc/client": "^11.4.3",
+    "@trpc/react-query": "^11.4.3",
+    "@trpc/server": "^11.4.3",
+    "ai": "^5.0.0",
+    "lucide-react": "^0.468.0",
+    "next": "^15.5.3",
+    "pg": "^8.23.1",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "server-only": "^0.0.1",
+    "zod": "^3.25.0"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3.3.1",
+    "@types/node": "^22.15.30",
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.7",
+    "eslint": "^9.32.0",
+    "eslint-config-next": "^15.5.3",
+    "prisma": "^7.10.0",
+    "tsx": "^4.20.3",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.4"
+  }
+}
