@@ -6,6 +6,7 @@ import "../../globals.css";
 export const metadata: Metadata = {
   title: "HealTrip | Patient Decision Assistant",
   description: "A bilingual care-navigation prototype.",
+  icons: { icon: [{ url: "/logo.jpg", type: "image/jpeg" }] },
 };
 
 export default async function LocaleLayout({

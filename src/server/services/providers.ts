@@ -1,33 +1,12 @@
 import "server-only";
-import { z } from "zod";
 import { db } from "@/server/db";
+import { DoctorSummarySchema, HospitalSummarySchema, normalizeProviderSearchInput, ProviderSearchInput, type DoctorSummary, type HospitalSummary } from "@/server/services/provider-schemas";
 
-export const ProviderSearchInput = z.object({
-  specialty: z.string().trim().min(1).max(80).optional(),
-  city: z.string().trim().min(1).max(80).optional(),
-});
-
-export const DoctorSummarySchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  specialty: z.string(),
-  city: z.string(),
-  hospital: z.string().nullable(),
-});
-
-export const HospitalSummarySchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  city: z.string(),
-  address: z.string(),
-});
-
-export type ProviderSearchInput = z.infer<typeof ProviderSearchInput>;
-export type DoctorSummary = z.infer<typeof DoctorSummarySchema>;
-export type HospitalSummary = z.infer<typeof HospitalSummarySchema>;
+export { DoctorSummarySchema, HospitalSummarySchema, ProviderSearchInput } from "@/server/services/provider-schemas";
+export type { DoctorSummary, HospitalSummary } from "@/server/services/provider-schemas";
 
 export async function searchDoctors(input: ProviderSearchInput): Promise<DoctorSummary[]> {
-  const parsed = ProviderSearchInput.parse(input);
+  const parsed = normalizeProviderSearchInput(input);
   const records = await db.doctor.findMany({
     where: {
       ...(parsed.city ? { city: { contains: parsed.city, mode: "insensitive" } } : {}),
@@ -48,7 +27,7 @@ export async function searchDoctors(input: ProviderSearchInput): Promise<DoctorS
 }
 
 export async function searchHospitals(input: ProviderSearchInput): Promise<HospitalSummary[]> {
-  const parsed = ProviderSearchInput.parse(input);
+  const parsed = normalizeProviderSearchInput(input);
   const records = await db.hospital.findMany({
     where: {
       ...(parsed.city ? { city: { contains: parsed.city, mode: "insensitive" } } : {}),

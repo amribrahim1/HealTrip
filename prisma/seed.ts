@@ -23,6 +23,7 @@ const doctors = [
   { id: "demo-doctor-07", name: "Dr. Hana Mostafa (Demo)", specialty: "Cardiology", city: "Alexandria", hospitalId: "demo-alexandria" },
   { id: "demo-doctor-08", name: "Dr. Tarek Amin (Demo)", specialty: "Neurology", city: "Cairo", hospitalId: "demo-cairo-heart" },
   { id: "demo-doctor-09", name: "Dr. Nadia Hassan (Demo)", specialty: "Dermatology", city: "Giza", hospitalId: "demo-giza-care" },
+  { id: "demo-doctor-10", name: "Dr. Hadeer Nassar (Demo)", specialty: "Dermatology", city: "Cairo", hospitalId: "demo-nile-medical" },
 ];
 
 async function main() {

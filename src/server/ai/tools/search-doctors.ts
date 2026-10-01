@@ -1,5 +1,5 @@
 import { tool } from "ai";
-import { ProviderSearchInput } from "@/server/services/providers";
+import { ProviderSearchInput } from "@/server/services/provider-schemas";
 
 export function createSearchDoctorsTool(execute: (input: { specialty?: string; city?: string }) => Promise<unknown>) {
   return tool({

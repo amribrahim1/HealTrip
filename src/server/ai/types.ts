@@ -1,8 +1,8 @@
 import { z } from "zod";
-import { DoctorSummarySchema, HospitalSummarySchema } from "@/server/services/providers";
+import { DoctorSummarySchema, HospitalSummarySchema } from "@/server/services/provider-schemas";
 
 export const ToolCallSummarySchema = z.object({
-  name: z.enum(["searchDoctors", "searchHospitals", "emergencyGuidance"]),
+  name: z.enum(["searchDoctors", "searchHospitals"]),
   status: z.enum(["success", "empty", "unavailable", "completed"]),
   count: z.number().int().nonnegative().optional(),
 });

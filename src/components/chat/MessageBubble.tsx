@@ -10,7 +10,7 @@ const providerResultsSchema = z.object({
 });
 
 const toolCallsSchema = z.array(z.object({
-  name: z.enum(["searchDoctors", "searchHospitals", "emergencyGuidance"]),
+  name: z.enum(["searchDoctors", "searchHospitals"]),
   status: z.enum(["success", "empty", "unavailable", "completed"]),
   count: z.number().int().nonnegative().optional(),
 }));

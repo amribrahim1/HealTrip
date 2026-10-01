@@ -9,6 +9,7 @@ vi.mock("@/server/db", () => ({
 
 import { db } from "@/server/db";
 import { searchDoctors, searchHospitals } from "@/server/services/providers";
+import { findProviderCity } from "@/server/services/provider-schemas";
 
 const doctorFindMany = vi.mocked(db.doctor.findMany);
 const hospitalFindMany = vi.mocked(db.hospital.findMany);
@@ -32,7 +33,7 @@ describe("provider search services", () => {
 
     expect(doctorFindMany).toHaveBeenCalledWith(expect.objectContaining({
       where: {
-        city: { contains: "cairo", mode: "insensitive" },
+        city: { contains: "Cairo", mode: "insensitive" },
         specialty: { contains: "cardio", mode: "insensitive" },
       },
       take: 20,
@@ -69,5 +70,21 @@ describe("provider search services", () => {
         doctors: { some: { specialty: { contains: "neurology", mode: "insensitive" } } },
       },
     }));
+  });
+
+  it("normalizes Arabic city names to the canonical seeded database value", async () => {
+    hospitalFindMany.mockResolvedValue([]);
+
+    await searchHospitals({ city: "الإسكندرية" });
+
+    expect(hospitalFindMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: { city: { contains: "Alexandria", mode: "insensitive" } },
+    }));
+  });
+
+  it("finds supported city names in English and Arabic directory questions", () => {
+    expect(findProviderCity("ما المستشفيات الموجودة في الإسكندرية؟")).toBe("Alexandria");
+    expect(findProviderCity("What hospitals are in Cairo?")).toBe("Cairo");
+    expect(findProviderCity("What hospitals are available?")).toBeUndefined();
   });
 });

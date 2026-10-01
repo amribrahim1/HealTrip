@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Image from "next/image";
 import { Languages, LoaderCircle, MessageSquarePlus, ShieldCheck, Trash2 } from "lucide-react";
 import { messages as allMessages } from "@/lib/i18n/messages";
 import { trpc } from "@/lib/trpc";
@@ -120,7 +121,8 @@ export function Chat({ locale }: { locale: Locale }) {
     <main className="app-shell">
       <header className="topbar">
         <a className="brand" href={`/${locale}/chat`} aria-label={copy.brand}>
-          <span className="brand-mark">H</span><span>{copy.brand}</span>
+          <Image className="brand-logo" src="/logo.jpg" alt="" width={528} height={252} priority />
+          <span>{copy.brand}</span>
         </a>
         <div className="topbar-actions">
           <span className="demo-label"><span />{copy.category}</span>

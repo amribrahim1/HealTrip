@@ -4,17 +4,52 @@ import { z } from "zod";
 import { getSystemPrompt } from "@/server/ai/prompts";
 import { getLanguageModel } from "@/server/ai/provider";
 import { emptyProviderResults, type ProviderResults, type ToolCallSummary } from "@/server/ai/types";
-import { createEmergencyGuidanceTool } from "@/server/ai/tools/emergency-tool";
 import { createSearchDoctorsTool } from "@/server/ai/tools/search-doctors";
 import { createSearchHospitalsTool } from "@/server/ai/tools/search-hospitals";
-import { emergencyGuidance } from "@/server/ai/tools/emergency-guidance";
-import { searchDoctors, searchHospitals, type ProviderSearchInput } from "@/server/services/providers";
+import { searchDoctors, searchHospitals } from "@/server/services/providers";
+import { findProviderCity, type ProviderSearchInput } from "@/server/services/provider-schemas";
 
 const MAX_TOOL_ITERATIONS = 5;
 const ModelMessageSchema = z.array(z.object({
   role: z.enum(["user", "assistant"]),
   content: z.string().max(2000),
 })).max(12);
+
+function findExplicitDirectoryRequest(message: string): { doctors: boolean; hospitals: boolean; params: ProviderSearchInput } | null {
+  const doctors = /\b(?:doctors?|physicians?|cardiologists?|cardiology|neurologists?|neurology|orthopedists?|dermatologists?)\b|أطباء|طبيب|طبيبة|دكتور|دكتورة|طبيب(?:ة)? قلب/i.test(message);
+  const hospitals = /\b(?:hospitals?|clinics?)\b|مستشفيات|مستشفى|عيادات|عيادة/i.test(message);
+  if (!doctors && !hospitals) return null;
+
+  const specialties: Array<[string, RegExp]> = [
+    ["Cardiology", /\b(?:cardiologist|cardiology|cardio)\b|قلب/i],
+    ["Neurology", /\b(?:neurologist|neurology)\b|أعصاب/i],
+    ["Orthopedics", /\b(?:orthopedist|orthopedics)\b|عظام/i],
+    ["Dermatology", /\b(?:dermatologist|dermatology)\b|جلدية/i],
+    ["Gastroenterology", /\b(?:gastroenterologist|gastroenterology)\b|جهاز هضمي/i],
+  ];
+  const specialty = specialties.find(([, pattern]) => pattern.test(message))?.[0];
+
+  return {
+    doctors,
+    hospitals,
+    params: { city: findProviderCity(message), specialty },
+  };
+}
+
+function getProviderSearchResponse(locale: "en" | "ar", providerResults: ProviderResults, toolCalls: ToolCallSummary[]) {
+  const hasResults = providerResults.doctors.length > 0 || providerResults.hospitals.length > 0;
+  return {
+    message: hasResults
+      ? locale === "ar"
+        ? "هذه خيارات من دليل HealTrip التجريبي. البيانات تجريبية وليست تأكيداً للتوفر أو توصية طبية."
+        : "These options are from the HealTrip demo directory. They are fictional and are not confirmation of availability or a medical recommendation."
+      : locale === "ar"
+        ? "لم أجد خيارات مطابقة في قاعدة بيانات HealTrip التجريبية الحالية."
+        : "I couldn't find matching options in the current HealTrip demo database.",
+    providerResults,
+    toolCalls,
+  };
+}
 
 export async function runAgent(input: {
   locale: "en" | "ar";
@@ -45,7 +80,26 @@ export async function runAgent(input: {
     }
   };
 
-  const latestEmergencyResult = emergencyGuidance(input.latestMessage);
+  const explicitDirectoryRequest = findExplicitDirectoryRequest(input.latestMessage);
+  if (explicitDirectoryRequest) {
+    await Promise.all([
+      explicitDirectoryRequest.doctors ? search("doctors", explicitDirectoryRequest.params) : Promise.resolve(),
+      explicitDirectoryRequest.hospitals ? search("hospitals", explicitDirectoryRequest.params) : Promise.resolve(),
+    ]);
+
+    if (providerUnavailable) {
+      return {
+        message: input.locale === "ar"
+          ? "تعذر استرجاع معلومات مقدمي الرعاية الآن. يرجى المحاولة لاحقاً."
+          : "I couldn't retrieve provider information right now. Please try again later.",
+        providerResults: emptyProviderResults(),
+        toolCalls,
+      };
+    }
+
+    return getProviderSearchResponse(input.locale, providerResults, toolCalls);
+  }
+
   const result = await generateText({
     model: getLanguageModel(),
     system: getSystemPrompt(input.locale),
@@ -56,11 +110,6 @@ export async function runAgent(input: {
     tools: {
       searchDoctors: createSearchDoctorsTool((params) => search("doctors", params)),
       searchHospitals: createSearchHospitalsTool((params) => search("hospitals", params)),
-      emergencyGuidance: createEmergencyGuidanceTool(async () => ({
-        isEmergency: latestEmergencyResult.isEmergency,
-        messageKey: latestEmergencyResult.messageKey,
-        reasonCodes: latestEmergencyResult.reasonCodes,
-      })),
     },
   });
 
@@ -75,18 +124,7 @@ export async function runAgent(input: {
   }
 
   if (toolCalls.length > 0) {
-    const hasResults = providerResults.doctors.length > 0 || providerResults.hospitals.length > 0;
-    return {
-      message: hasResults
-        ? input.locale === "ar"
-          ? "هذه الخيارات مأخوذة من قاعدة بيانات HealTrip التجريبية. البيانات المعروضة تجريبية وليست توصية طبية."
-          : "These options are from the HealTrip demo database. The records are fictional and are not a medical recommendation."
-        : input.locale === "ar"
-          ? "لم أجد خيارات مطابقة في قاعدة بيانات HealTrip التجريبية الحالية."
-          : "I couldn't find matching options in the current HealTrip demo database.",
-      providerResults,
-      toolCalls,
-    };
+    return getProviderSearchResponse(input.locale, providerResults, toolCalls);
   }
 
   return { message: result.text, providerResults, toolCalls };

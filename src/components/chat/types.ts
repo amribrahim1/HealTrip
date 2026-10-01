@@ -17,7 +17,7 @@ export type HospitalCard = {
 };
 
 export type ToolCall = {
-  name: "searchDoctors" | "searchHospitals" | "emergencyGuidance";
+  name: "searchDoctors" | "searchHospitals";
   status: "success" | "empty" | "unavailable" | "completed";
   count?: number;
 };

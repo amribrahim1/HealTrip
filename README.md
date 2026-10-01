@@ -11,7 +11,6 @@ Next.js App Router
       └─ Chat router
           ├─ AI agent → Gemini via @ai-sdk/google
           ├─ searchDoctors / searchHospitals → validated services
-          └─ emergencyGuidance → deterministic demo rules
               └─ Prisma → PostgreSQL
 ```
 
@@ -31,7 +30,6 @@ The application does not log prompts or full conversation text. Do not add such 
 
 - The assistant must not diagnose, prescribe, or claim certainty.
 - Doctor and hospital details are only shown when present in validated tool results. Empty results stay empty; tool failures produce an unavailable message.
-- Chest-pain examples first trigger deterministic safety handling. The fixed demo flags are severe/sudden/worsening chest pain, breathing difficulty, fainting, severe sweating, or pain radiating to the arm or jaw. Otherwise the assistant asks clarifying questions.
 - These keyword rules are illustrative routing behavior, not clinical triage. They have not been clinically validated and must not be used for real care decisions.
 - User messages are untrusted. Prompts and API secrets remain server-only; hidden reasoning is never returned.
 - Tool execution is capped at five model steps, and user text/history are length-bounded.

@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 type AgentOptions = {
   tools: {
     searchDoctors: { execute: (input: { specialty?: string; city?: string }) => Promise<unknown> };
+    searchHospitals: { execute: (input: { specialty?: string; city?: string }) => Promise<unknown> };
   };
 };
 
@@ -21,6 +22,7 @@ import { db } from "@/server/db";
 import { runAgent } from "@/server/ai/agent";
 
 const doctorFindMany = vi.mocked(db.doctor.findMany);
+const hospitalFindMany = vi.mocked(db.hospital.findMany);
 
 describe("AI agent provider grounding", () => {
   beforeEach(() => {
@@ -35,6 +37,7 @@ describe("AI agent provider grounding", () => {
       updatedAt: new Date(0),
       hospital: null,
     }] as never);
+    hospitalFindMany.mockResolvedValue([]);
   });
 
   it("uses native tool output for provider cards and never exposes invented model text", async () => {
@@ -70,5 +73,29 @@ describe("AI agent provider grounding", () => {
     expect(result.message).toContain("couldn't retrieve provider information");
     expect(result.message).not.toContain("private database detail");
     expect(result.toolCalls).toEqual([{ name: "searchDoctors", status: "unavailable" }]);
+  });
+
+  it("searches the database directly for a clear Arabic hospital-directory request", async () => {
+    hospitalFindMany.mockResolvedValue([{
+      id: "alexandria-demo",
+      name: "Alexandria Coastal Clinic (Demo)",
+      city: "Alexandria",
+      address: "Demo address",
+      createdAt: new Date(0),
+      updatedAt: new Date(0),
+    }] as never);
+
+    const result = await runAgent({
+      locale: "ar",
+      latestMessage: "ما المستشفيات الموجودة في الإسكندرية؟",
+      messages: [{ role: "user", content: "ما المستشفيات الموجودة في الإسكندرية؟" }],
+    });
+
+    expect(hospitalFindMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: { city: { contains: "Alexandria", mode: "insensitive" } },
+    }));
+    expect(result.providerResults.hospitals).toEqual([expect.objectContaining({ city: "Alexandria" })]);
+    expect(result.toolCalls).toEqual([{ name: "searchHospitals", status: "success", count: 1 }]);
+    expect(generateTextMock).not.toHaveBeenCalled();
   });
 });

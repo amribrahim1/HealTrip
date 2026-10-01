@@ -1,4 +1,4 @@
-import { Check, Search, ShieldAlert } from "lucide-react";
+import { Check, Search } from "lucide-react";
 import type { Messages } from "@/lib/i18n/messages";
 import type { ToolCall } from "./types";
 
@@ -8,7 +8,7 @@ export function ToolStatus({ toolCalls, copy }: { toolCalls: ToolCall[]; copy: M
   return (
     <ul className="tool-list" aria-label={copy.source}>
       {toolCalls.map((call, index) => {
-        const Icon = call.name === "emergencyGuidance" ? ShieldAlert : call.status === "success" ? Check : Search;
+        const Icon = call.status === "success" ? Check : Search;
         const label = copy.tool[call.name];
         const detail = call.status === "success" && typeof call.count === "number"
           ? `${call.count} ${copy.tool.success}`

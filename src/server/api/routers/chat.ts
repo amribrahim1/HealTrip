@@ -1,7 +1,6 @@
 import { z } from "zod";
 import { db } from "@/server/db";
 import { runAgent } from "@/server/ai/agent";
-import { emergencyGuidance, emergencyResponseForConversation } from "@/server/ai/tools/emergency-guidance";
 import { emptyProviderResults, ToolCallSummarySchema } from "@/server/ai/types";
 import { protectedProcedure, router } from "@/server/api/trpc";
 import { TRPCError } from "@trpc/server";
@@ -44,33 +43,22 @@ export const chatRouter = router({
         select: { role: true, content: true },
       });
       const history = storedHistory.reverse();
-      const recentUserMessages = history.filter((message) => message.role === "user").slice(-3).map((message) => message.content).join("\n");
-      const emergency = emergencyGuidance(recentUserMessages);
-      const fixedResponse = emergencyResponseForConversation(input.locale, input.message, recentUserMessages);
       let result;
 
-      if (fixedResponse) {
+      try {
+        result = await runAgent({
+          locale: input.locale,
+          latestMessage: input.message,
+          messages: history.map((message) => ({ role: message.role, content: message.content })),
+        });
+      } catch {
         result = {
-          message: fixedResponse,
+          message: input.locale === "ar"
+            ? "خدمة الذكاء الاصطناعي غير متاحة مؤقتاً. يرجى المحاولة مرة أخرى."
+            : "The AI service is temporarily unavailable. Please try again.",
           providerResults: emptyProviderResults(),
-          toolCalls: [{ name: "emergencyGuidance" as const, status: emergency.isEmergency ? "success" as const : "completed" as const }],
+          toolCalls: [],
         };
-      } else {
-        try {
-          result = await runAgent({
-            locale: input.locale,
-            latestMessage: input.message,
-            messages: history.map((message) => ({ role: message.role, content: message.content })),
-          });
-        } catch {
-          result = {
-            message: input.locale === "ar"
-              ? "خدمة الذكاء الاصطناعي غير متاحة مؤقتاً. يرجى المحاولة مرة أخرى."
-              : "The AI service is temporarily unavailable. Please try again.",
-            providerResults: emptyProviderResults(),
-            toolCalls: [],
-          };
-        }
       }
 
       await db.message.create({
